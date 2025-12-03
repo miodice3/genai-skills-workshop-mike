@@ -1,0 +1,66 @@
+{
+  "playbook": {
+    "playbook": {
+      "displayName": "aurora-bay-agent-playbook",
+      "goal": "Your goal is to help answer user queries using your tools.",
+      "steps": [ {
+        "text": "Greet the user, then ask how you can help them today."
+      }, {
+        "text": "Summarize the user's request and ask them to confirm that you understood correctly."
+      }, {
+        "text": "If necessary, seek clarifying details."
+      }, {
+        "text": "Use ${TOOL:f7fe9d68-2ec7-4490-a5c8-684dcf4205e7} to help look for particular information on Aurora Bay Frequently Asked Questions."
+      } ],
+      "tools": [ "f7fe9d68-2ec7-4490-a5c8-684dcf4205e7" ],
+      "etag": "693094bd",
+      "playbookId": "00000000-0000-0000-0000-000000000000",
+      "tokenCount": 108,
+      "playbookType": "WORKFLOW",
+      "codeBlock": {
+      
+      }
+    },
+    "tools": [ {
+      "id": "f7fe9d68-2ec7-4490-a5c8-684dcf4205e7",
+      "displayName": "myds",
+      "description": "This data store has Frequently Asked Questions (FAQs) about Aurora Bay, Alaska",
+      "etag": "69309330",
+      "dataStoreTool": {
+        "dataStoreConnections": [ {
+          "dataStoreType": "UNSTRUCTURED",
+          "dataStore": "projects/720196750972/locations/us/collections/default_collection/dataStores/myds_1764791044620",
+          "documentProcessingMode": "DOCUMENTS",
+          "engineType": "CHAT_ENGINE",
+          "connectorConfig": {
+          
+          },
+          "createTime": {
+            "seconds": 1764791047,
+            "nanos": 400000000
+          },
+          "displayName": "myds",
+          "dialogflowAddTime": {
+            "seconds": 1764791047,
+            "nanos": 400000000
+          }
+        } ],
+        "models": {
+          "summarizationModel": {
+            "model": "default"
+          },
+          "rewriterModel": {
+            "model": "default"
+          }
+        },
+        "groundingSettings": {
+        
+        },
+        "payloadSettings": {
+        
+        },
+        "mode": "MODE_DEFAULT"
+      }
+    } ]
+  }
+}
