@@ -534,3 +534,155 @@ class TestTweetRules(unittest.TestCase):
 
 unittest.main(argv=[''], verbosity=2, exit=False)
 
+import pandas as pd
+import vertexai
+from vertexai.generative_models import GenerativeModel
+from vertexai.evaluation import EvalTask
+from datetime import datetime
+
+def run_evaluation():
+    """
+    Runs a basic evaluation using Vertex AI Eval.
+    Tests the model's ability to answer weather questions based on provided context.
+    """
+    print("\n--- 🧪 Starting Evaluation ---")
+
+    # 1. Initialize Vertex AI
+    # Replace 'your-project-id' with your actual GCP project ID if not set in env
+    PROJECT_ID = "qwiklabs-gcp-04-69ab7976b631"
+    LOCATION = "us-central1"
+    vertexai.init(project=PROJECT_ID, location=LOCATION)
+
+    # 2. Define a Test Dataset
+    # We provide a 'prompt' and a 'context'.
+    # 'Groundedness' measures if the model's answer is supported by the 'context'.
+    eval_data = {
+        "prompt": [
+            "What is the weather like in Denver today?",
+            "Is it going to rain in Miami?",
+            "Tell me the wind conditions for Seattle."
+        ],
+        "context": [
+            "Denver, CO: Sunny, High 85F, Low 60F. Wind 5mph NW.",
+            "Miami, FL: Heavy thunderstorms expected all afternoon. 90% chance of rain.",
+            "Seattle, WA: Overcast but dry. Wind speeds are high, gusting up to 45mph from the South."
+        ]
+    }
+
+    eval_dataset = pd.DataFrame(eval_data)
+
+    # 3. Define the Evaluation Task
+    # We look for:
+    # - groundedness: Does the answer rely purely on the context provided?
+    # - instruction_following: Did it answer the specific question asked?
+    eval_task = EvalTask(
+        dataset=eval_dataset,
+        metrics=["groundedness", "instruction_following"],
+        experiment="weather-bot-eval-v1"
+    )
+
+    # 4. Load the Model to be Evaluated
+    # Note: We use the standard Vertex AI GenerativeModel here for the eval loop
+    model = GenerativeModel("gemini-2.5-flash")
+
+    # 5. Run Evaluation
+    run_ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+    experiment_run_name = f"weather-eval-run-{run_ts}"
+
+    print(f"Running experiment: {experiment_run_name}")
+
+    results = eval_task.evaluate(
+        model=model,
+        experiment_run_name=experiment_run_name
+    )
+
+    # 6. Display Results
+    print("\n--- 📊 Evaluation Results ---")
+    print(results.summary_metrics)
+
+    # Optional: Display the detailed dataframe with scores per row
+    # print(results.metrics_table)
+
+if __name__ == "__main__":
+    # Uncomment the line below to run the original generation logic
+    # generate()
+
+    # Run the new evaluation logic
+    run_evaluation()
+
+# import pandas as pd
+
+# prompt = "Write a one paragraph car listing known features of this car. Use only the details included in the following information: "
+# prompt_2 = "Using your imagination, use the cars properties as a baseline, and exagerate its features fantastically. You get bonus points for being creative, add in anything to make the car more desireable!"
+
+# contexts = [str(car) for car in car_data]
+# full_prompts = [prompt + str(car) for car in car_data]
+# full_prompts_2 = [prompt_2 + str(car) for car in car_data]
+
+# eval_dataset = pd.DataFrame(
+#   {
+#     "prompt": full_prompts,
+#     # "instruction": full_prompts,
+#     "context": contexts,
+#   }
+# )
+
+# eval_dataset_2 = pd.DataFrame(
+#   {
+#     "prompt": full_prompts_2,
+#     # "instruction": full_prompts,
+#     "context": contexts,
+#   }
+# )
+
+
+# # create an evaluation task
+# from vertexai.evaluation import (
+#     MetricPromptTemplateExamples,
+#     EvalTask,
+#     PairwiseMetric,
+#     PairwiseMetricPromptTemplate,
+#     PointwiseMetric,
+#     PointwiseMetricPromptTemplate,
+# )
+
+# qa_eval_task = EvalTask(
+#   dataset=eval_dataset,
+#   metrics=["instruction_following", "groundedness"],
+#   experiment="car-listing-generation",
+# )
+
+# qa_eval_task_2 = EvalTask(
+#   dataset=eval_dataset_2,
+#   metrics=["instruction_following", "groundedness"],
+#   experiment="car-listing-generation-two",
+# )
+
+
+# # run the evaluation
+# import datetime
+# from vertexai.generative_models import GenerativeModel
+# import vertexai
+# vertexai.init()
+
+# model_name_str = 'gemini-2.5-flash'
+# # --- FIX: Load the model using the GenerativeModel class ---
+# model_object = GenerativeModel(model_name_str)
+
+# run_ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+# result = qa_eval_task.evaluate(
+#     model=model_object,
+#     experiment_run_name=f"apartment-listing-gen-{run_ts}"
+#   )
+
+# evaluation_results = []
+# evaluation_results.append(result)
+
+# run_ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+# result = qa_eval_task_2.evaluate(
+#     model=model_object,
+#     experiment_run_name=f"apartment-listing-gen-two-{run_ts}"
+#   )
+
+# evaluation_results_2 = []
+# evaluation_results_2.append(result)
