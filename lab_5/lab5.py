@@ -267,7 +267,7 @@ def handle_response(client: genai.Client, response: types.GenerateContentRespons
             # print(config.tools)
             # print('tool inspection 2')
             # new_list = my_list[1:]
-            config.tools = config.tools[1:]
+            # config.tools = config.tools[1:]
             # print(config.tools)
             # print('tool inspection 3')
             # print(f'model: {model} - contents: {contents} - config: {config}')
@@ -296,7 +296,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # --- Main Generation Function ---
-def generate():
+def generate(user_query: str):
   # 1. Initialize Client
   client = genai.Client(vertexai=True)
 
@@ -307,9 +307,7 @@ def generate():
     types.Content(
       role="user",
       parts=[
-        # types.Part.from_text(text="""What is the weather forecast for Los Angeles, CA? use the get_weather_from_city_state""")
-        # RAG works
-        types.Part.from_text(text="""Can you tell me about the Alaska Department of Snow? what are some facts about it""")
+        types.Part.from_text(text=user_query)
       ]
     ),
   ]
@@ -393,5 +391,15 @@ def generate():
   # except Exception as e:
   #   logger.error(f"An error occurred during content generation: {e}")
 
+# if __name__ == "__main__":
+#     generate()
+
+# demonstrate function calling tool usage and recursive model query
+#
 if __name__ == "__main__":
-    generate()
+  generate("""What is the weather forecast for Los Angeles, CA? use the get_weather_from_city_state""")
+
+# demonstrate RAG functionality
+#
+if __name__ == "__main__":
+  generate("""Can you tell me about the Alaska Department of Snow? what are some facts about it""")
