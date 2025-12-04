@@ -302,6 +302,19 @@ def generate(user_query: str):
 
   model = "gemini-2.5-pro"
 
+  system_instructions = """You are a helpful AI assistant with access to weather information and knowledge retrieval capabilities for the Alaska Department of Snow.
+  When users ask about weather, use the get_weather_from_city_state function to get accurate, current forecasts.
+  For other questions, you can search through your knowledge base to provide helpful information.
+
+  RULES:
+  1. if a user asks about anything other than a weather forecast in a City and State, snow, or Alaska Department of Snow, respond with "I'm sorry I cannot help you with that."
+  2. Be concise but informative in your responses.
+
+  User Query:
+  """
+
+  enhanced_user_query = system_instructions + user_query
+
   # 2. Define Contents (Mutable list for history)
   contents = [
     types.Content(
@@ -396,10 +409,66 @@ def generate(user_query: str):
 
 # demonstrate function calling tool usage and recursive model query
 #
+weather_query = """What is the weather forecast for Los Angeles, CA? use the get_weather_from_city_state"""
 if __name__ == "__main__":
-  generate("""What is the weather forecast for Los Angeles, CA? use the get_weather_from_city_state""")
+  generate(weather_query)
 
 # demonstrate RAG functionality
 #
+ads_query = """Can you tell me about the Alaska Department of Snow? what are some facts about it"""
 if __name__ == "__main__":
-  generate("""Can you tell me about the Alaska Department of Snow? what are some facts about it""")
+  generate(ads_query)
+
+# demonstrate RAG functionality
+#
+out_of_scope_query = """How many players are there in the NBA?"""
+if __name__ == "__main__":
+  generate(out_of_scope_query)
+
+# classifier LLM for assertions
+
+PROJECT_ID = "qwiklabs-gcp-04-69ab7976b631"
+LOCATION = "us-west1"
+client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
+
+def classify_user_question(prompt: str) -> str:
+  """
+  Uses the Gemini model to classify a user question into one of four categories:
+  Employment, General Information, Emergency Services, or Tax Related.
+
+  Args:
+    prompt: The user's question as a string.
+
+  Returns:
+    The classified category as a string (e.g., 'Employment').
+  """
+
+  # Select a suitable model for fast classification (e.g., gemini-2.5-flash)
+  model = 'gemini-2.5-flash'
+
+  # The system instruction guides the model's behavior and output format.
+  system_instruction = (
+      "You are an expert classification system. "
+      "Your sole task is to classify the user's message into one of the "
+      "following 3 categories: 'Weather Forecast', 'Alaska Department of Snow (ADS)', "
+      "'Out of Scope'. "
+      "You MUST output ONLY the name of the category."
+  )
+
+  response = client.models.generate_content(
+      model=model,
+      contents=f"Message: {prompt}",
+      config=types.GenerateContentConfig(
+          system_instruction=system_instruction,
+          # Setting temperature to 0.0 encourages deterministic and strict classification
+          temperature=0.0
+      ),
+  )
+
+  # Clean up the response text and return the category
+  return response.text.strip()
+
+# --- Example Usage ---
+print(classify_user_question(weather_query))
+print(classify_user_question(ads_query))
+print(classify_user_question(out_of_scope_query))
