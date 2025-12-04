@@ -267,7 +267,7 @@ def handle_response(client: genai.Client, response: types.GenerateContentRespons
             # print(config.tools)
             # print('tool inspection 2')
             # new_list = my_list[1:]
-            # config.tools = config.tools[1:]
+            config.tools = config.tools[1:]
             # print(config.tools)
             # print('tool inspection 3')
             # print(f'model: {model} - contents: {contents} - config: {config}')
@@ -308,7 +308,8 @@ def generate(user_query: str):
 
   RULES:
   1. if a user asks about anything other than a weather forecast in a City and State, snow, or Alaska Department of Snow, respond with "I'm sorry I cannot help you with that."
-  2. Be concise but informative in your responses.
+  2. Limit your final response to 240 characters or less.
+  3. Add the relevant hash tag in ALL CAPITAL LETTERS, #FORECAST, #ALASKA_DS, #USEANOTHERCHATBOT
 
   User Query:
   """
@@ -368,7 +369,6 @@ def generate(user_query: str):
   # 5. Define GenerateContentConfig
   logger.info("Defining GenerateContentConfig with combined tools list...")
   all_tools = [retrieval_tool, x_weather_tool]
-  # all_tools = [x_weather_tool]
 
   generate_content_config = types.GenerateContentConfig(
     temperature = 1,
@@ -472,3 +472,65 @@ def classify_user_question(prompt: str) -> str:
 print(classify_user_question(weather_query))
 print(classify_user_question(ads_query))
 print(classify_user_question(out_of_scope_query))
+
+def does_response_follow_rules(tweet):
+  model = 'gemini-2.5-flash'
+
+  response = client.models.generate_content(
+    model=model,
+    contents=
+    """Does the tweet follow the following rules:
+    1. Keep your Tweets below 240 characters
+    2. Relevant hashtags must be added to each output, ie: #FORECAST, #ALASKA_DS, or #USEANOTHERCHATBOT
+
+    Only return Yes or No
+    Tweet: {0}
+    Output: """.format(tweet)
+  )
+  return response.text.strip()
+
+# Write unit tests for each function using pytest.
+import unittest
+
+class TestPositiveOrNegative(unittest.TestCase):
+
+  def test_isWeatherQuery(self):
+    response = classify_user_question(weather_query)
+    self.assertEqual(response, "Weather Forecast")
+
+  def test_isAdsQuery(self):
+    response = classify_user_question(ads_query)
+    self.assertEqual(response, "Alaska Department of Snow (ADS)")
+
+  def test_isOutOfScopeQuery(self):
+    response = classify_user_question(out_of_scope_query)
+    self.assertEqual(response, "Out of Scope")
+
+
+# these are not passing, need to dig into why final model response
+# is not adhering to system instructions, however failing specs at least are failing correctly
+# and demonstrate behavior needs to be corrected.
+#
+class TestTweetRules(unittest.TestCase):
+  def test_tweet_results_weather(self):
+    response = generate(weather_query)
+    correct = does_response_follow_rules(response)
+    self.assertEqual(correct, "Yes")
+
+  def test_tweet_results_ads(self):
+    response = generate(ads_query)
+    correct = does_response_follow_rules(response)
+    self.assertEqual(correct, "Yes")
+
+  def test_tweet_results_out_of_scope(self):
+    generated_tweet = generate(out_of_scope_query)
+    correct = does_response_follow_rules(generated_tweet)
+    self.assertEqual(correct, "Yes")
+
+  def test_does_not_follow(self):
+    generated_tweet = "rules are made to be broken"
+    correct = does_response_follow_rules(generated_tweet)
+    self.assertEqual(correct, "No")
+
+unittest.main(argv=[''], verbosity=2, exit=False)
+
