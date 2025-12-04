@@ -280,7 +280,7 @@ def handle_response(client: genai.Client, response: types.GenerateContentRespons
             )
             # pdb.set_trace()
             print('model queried for recursive call, now recursive call to handle_response')
-            handle_response(client, next_response, contents, config, model)
+            return handle_response(client, next_response, contents, config, model)
         except Exception as e:
             print(f"API Error during recursion: {e}")
             # print(contents) # Uncomment to inspect history if it fails again
@@ -291,6 +291,7 @@ def handle_response(client: genai.Client, response: types.GenerateContentRespons
         print("\n--- Final Answer ---")
         if response.text:
             print(response.text)
+            return response.text
 
 # import model armor
 from google.cloud import modelarmor_v1
@@ -350,6 +351,50 @@ def check_prompt_with_model_armor(prompt: str) -> bool:
         return False
     else:
         print("✅ Model Armor Check Passed.")
+        return True
+
+# check response with model armor
+MODEL_ARMOR_RESPONSE_TEMPLATE_ID = "ma-response-filter"
+
+def check_response_with_model_armor(model_response: str) -> bool:
+    """
+    check response against Model Armor template
+
+    Args:
+        model_response: The model's output string.
+
+    Returns:
+        True if the response is safe to proceed, False if it should be blocked/revised.
+    """
+    print(f"\nChecking model response with Model Armor template: {MODEL_ARMOR_RESPONSE_TEMPLATE_ID}...")
+
+    # Construct the resource name for the template
+    template_name = model_armor_client.template_path(
+        PROJECT_ID, MODEL_ARMOR_LOCATION, MODEL_ARMOR_RESPONSE_TEMPLATE_ID
+    )
+
+    # Prepare the model response data object
+    model_response_data = modelarmor_v1.DataItem(text=model_response)
+
+    # Create the request for response sanitization
+    ma_request = modelarmor_v1.SanitizeModelResponseRequest(
+        name=template_name,
+        model_response_data=model_response_data,
+    )
+
+    # Call the Model Armor service for response check
+    ma_response = model_armor_client.sanitize_model_response(request=ma_request)
+
+    # Check the result. MATCH_FOUND means a filter rule was triggered.
+    match_found = ma_response.sanitization_result.filter_match_state == modelarmor_v1.FilterMatchState.MATCH_FOUND
+
+    if match_found:
+        print("\n🚨 Model Armor Blocked Response 🚨")
+        # Print details for debugging (optional)
+        print(f"Results: {dict(ma_response.sanitization_result.filter_results)}")
+        return False
+    else:
+        print("✅ Model Armor Response Check Passed.")
         return True
 
 # Set up logging
@@ -461,7 +506,21 @@ def generate(user_query: str):
     logger.info("Initial response received.")
 
     # 7. Start the recursive handling process
-    handle_response(client, initial_response, contents, generate_content_config, model)
+    final_response = handle_response(client, initial_response, contents, generate_content_config, model)
+
+    print('this is final response about to check it with model armor')
+    print(final_response)
+
+
+    is_response_safe = check_response_with_model_armor(final_response)
+
+    if is_response_safe:
+      print('response passed model armor')
+      print(final_response)
+      return final_response
+    else:
+      print("\n[BLOCKED] The model generated an unsafe response, and it was blocked by Model Armor.")
+      return None
 
   else:
       blocked_status = "[BLOCKED] The query was blocked by Model Armor."
