@@ -599,6 +599,7 @@ def run_evaluation():
     # 6. Display Results
     print("\n--- 📊 Evaluation Results ---")
     print(results.summary_metrics)
+    print(results.metrics_table)
 
     # Optional: Display the detailed dataframe with scores per row
     # print(results.metrics_table)
@@ -609,80 +610,3 @@ if __name__ == "__main__":
 
     # Run the new evaluation logic
     run_evaluation()
-
-# import pandas as pd
-
-# prompt = "Write a one paragraph car listing known features of this car. Use only the details included in the following information: "
-# prompt_2 = "Using your imagination, use the cars properties as a baseline, and exagerate its features fantastically. You get bonus points for being creative, add in anything to make the car more desireable!"
-
-# contexts = [str(car) for car in car_data]
-# full_prompts = [prompt + str(car) for car in car_data]
-# full_prompts_2 = [prompt_2 + str(car) for car in car_data]
-
-# eval_dataset = pd.DataFrame(
-#   {
-#     "prompt": full_prompts,
-#     # "instruction": full_prompts,
-#     "context": contexts,
-#   }
-# )
-
-# eval_dataset_2 = pd.DataFrame(
-#   {
-#     "prompt": full_prompts_2,
-#     # "instruction": full_prompts,
-#     "context": contexts,
-#   }
-# )
-
-
-# # create an evaluation task
-# from vertexai.evaluation import (
-#     MetricPromptTemplateExamples,
-#     EvalTask,
-#     PairwiseMetric,
-#     PairwiseMetricPromptTemplate,
-#     PointwiseMetric,
-#     PointwiseMetricPromptTemplate,
-# )
-
-# qa_eval_task = EvalTask(
-#   dataset=eval_dataset,
-#   metrics=["instruction_following", "groundedness"],
-#   experiment="car-listing-generation",
-# )
-
-# qa_eval_task_2 = EvalTask(
-#   dataset=eval_dataset_2,
-#   metrics=["instruction_following", "groundedness"],
-#   experiment="car-listing-generation-two",
-# )
-
-
-# # run the evaluation
-# import datetime
-# from vertexai.generative_models import GenerativeModel
-# import vertexai
-# vertexai.init()
-
-# model_name_str = 'gemini-2.5-flash'
-# # --- FIX: Load the model using the GenerativeModel class ---
-# model_object = GenerativeModel(model_name_str)
-
-# run_ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-# result = qa_eval_task.evaluate(
-#     model=model_object,
-#     experiment_run_name=f"apartment-listing-gen-{run_ts}"
-#   )
-
-# evaluation_results = []
-# evaluation_results.append(result)
-
-# run_ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-# result = qa_eval_task_2.evaluate(
-#     model=model_object,
-#     experiment_run_name=f"apartment-listing-gen-two-{run_ts}"
-#   )
-
-# evaluation_results_2 = []
-# evaluation_results_2.append(result)
