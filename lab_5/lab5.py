@@ -7,8 +7,10 @@ Original file is located at
     https://colab.research.google.com/embedded/projects/qwiklabs-gcp-04-69ab7976b631/locations/us-central1/repositories/aa967f34-2501-4572-9b70-03755e9ef962
 """
 
+# Commented out IPython magic to ensure Python compatibility.
 # @title
-pip install --upgrade google-genai requests googlemaps
+# pip install --upgrade google-genai requests googlemaps
+# %pip install --upgrade google-genai requests googlemaps
 
 # @title
 GOOGLE_API_KEY = "AIzaSyA6cVm8Fld4Mov2ZDDK-ydKFVvtKKZQ4HM"
@@ -40,6 +42,7 @@ def get_lat_long_from_city(city: str, state: str) -> tuple[float, float] | None:
 
         # Geocode the address
         geocode_result = gmaps.geocode(address)
+        print(f'get_lat_long_from_city - geocode_result: {geocode_result}')
 
         if geocode_result:
             location = geocode_result[0]['geometry']['location']
@@ -178,6 +181,8 @@ from google import genai
 from google.genai import types
 import os
 
+import pdb
+
 # --- Recursive Response Handler (ROBUST FIX) ---
 def handle_response(client: genai.Client, response: types.GenerateContentResponse, contents: list, config: types.GenerateContentConfig, model: str):
 
@@ -225,10 +230,10 @@ def handle_response(client: genai.Client, response: types.GenerateContentRespons
                     )
                 )
             except Exception as e:
-                logger.error(f"Error executing weather tool: {e}")
+                print(f"Error executing weather tool: {e}")
 
         if not result_part:
-            logger.error("No result generated from tool execution.")
+            print("No result generated from tool execution.")
             return
 
         # --- FIX 2: Sanitize the Model's Turn in History ---
@@ -253,23 +258,35 @@ def handle_response(client: genai.Client, response: types.GenerateContentRespons
         )
         contents.append(tool_turn)
 
-        logger.info("Recursively calling model with updated history...")
+        print("Recursively calling model with updated history...")
 
         # 4. Recursive Call
         try:
+            # pdb.set_trace()
+            # print('tool inspection 1')
+            # print(config.tools)
+            # print('tool inspection 2')
+            # new_list = my_list[1:]
+            config.tools = config.tools[1:]
+            # print(config.tools)
+            # print('tool inspection 3')
+            # print(f'model: {model} - contents: {contents} - config: {config}')
+
             next_response = client.models.generate_content(
                 model=model,
                 contents=contents,
                 config=config,
             )
+            # pdb.set_trace()
+            print('model queried for recursive call, now recursive call to handle_response')
             handle_response(client, next_response, contents, config, model)
         except Exception as e:
-            logger.error(f"API Error during recursion: {e}")
+            print(f"API Error during recursion: {e}")
             # print(contents) # Uncomment to inspect history if it fails again
 
     else:
         # Base case: Text response
-        logger.info("Final response received.")
+        print("Final response received.")
         print("\n--- Final Answer ---")
         if response.text:
             print(response.text)
@@ -281,12 +298,7 @@ logger = logging.getLogger(__name__)
 # --- Main Generation Function ---
 def generate():
   # 1. Initialize Client
-  logger.info("Initializing Gemini Client...")
-  # NOTE: Replace 'vertexai=True' with 'api_key=os.environ.get("GEMINI_API_KEY")'
-  # if you are using the public API key approach.
-  # client = genai.Client(vertexai=True)
-  client = genai.Client(api_key=GOOGLE_API_KEY)
-  logger.info("Client initialized.")
+  client = genai.Client(vertexai=True)
 
   model = "gemini-2.5-pro"
 
@@ -295,8 +307,9 @@ def generate():
     types.Content(
       role="user",
       parts=[
-        types.Part.from_text(text="""What is the weather forecast for Los Angeles, CA? use the x_weather_tool""")
-        # types.Part.from_text(text="""Can you tell me about the Alaska Department of Snow? what are some facts about it""")
+        # types.Part.from_text(text="""What is the weather forecast for Los Angeles, CA? use the get_weather_from_city_state""")
+        # RAG works
+        types.Part.from_text(text="""Can you tell me about the Alaska Department of Snow? what are some facts about it""")
       ]
     ),
   ]
@@ -324,25 +337,27 @@ def generate():
   )
   logger.info("Function Calling Tool defined.")
 
-  # # 4. Define Retrieval Tool (RAG)
-  # logger.info("Defining Retrieval Tool (RAG)...")
-  # retrieval_tool = types.Tool(
-  #     retrieval=types.Retrieval(
-  #         vertex_rag_store=types.VertexRagStore(
-  #             rag_resources=[
-  #                 types.VertexRagStoreRagResource(
-  #                     rag_corpus="projects/720196750972/locations/us-east1/ragCorpora/4749045807062188032"
-  #                 )
-  #             ],
-  #         )
-  #     )
-  # )
-  # logger.info("Retrieval Tool defined.")
+  # NEW RAG: rag_corpus="projects/qwiklabs-gcp-04-69ab7976b631/locations/us-east1/ragCorpora/6917529027641081856"
+
+  # 4. Define Retrieval Tool (RAG)
+  logger.info("Defining Retrieval Tool (RAG)...")
+  retrieval_tool = types.Tool(
+      retrieval=types.Retrieval(
+          vertex_rag_store=types.VertexRagStore(
+              rag_resources=[
+                  types.VertexRagStoreRagResource(
+                      rag_corpus="projects/qwiklabs-gcp-04-69ab7976b631/locations/us-east1/ragCorpora/6917529027641081856"
+                  )
+              ],
+          )
+      )
+  )
+  print("Retrieval Tool defined.")
 
   # 5. Define GenerateContentConfig
   logger.info("Defining GenerateContentConfig with combined tools list...")
-  # all_tools = [retrieval_tool, x_weather_tool]
-  all_tools = [x_weather_tool]
+  all_tools = [retrieval_tool, x_weather_tool]
+  # all_tools = [x_weather_tool]
 
   generate_content_config = types.GenerateContentConfig(
     temperature = 1,
@@ -357,12 +372,7 @@ def generate():
     ),types.SafetySetting(
       category="HARM_CATEGORY_HARASSMENT", threshold="OFF"
     )],
-
     tools = all_tools,
-
-    # thinking_config=types.ThinkingConfig(
-    #   thinking_level="HIGH",
-    # ),
   )
   logger.info("GenerateContentConfig defined.")
 
