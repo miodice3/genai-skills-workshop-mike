@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab 5 Agent Chat</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Lab 5 Agent Chat</h1>
+            <p class="subtitle">Weather & Alaska Department of Snow Assistant</p>
+        </header>
+
+        <div class="chat-container">
+            <div id="messages" class="messages">
+                <div class="message assistant-message">
+                    <div class="message-content">
+                        Hello! I can help you with:
+                        <ul>
+                            <li>Weather forecasts (e.g., "What's the weather in Denver, CO?")</li>
+                            <li>Alaska Department of Snow information</li>
+                        </ul>
+                        What would you like to know?
+                    </div>
+                </div>
+            </div>
+
+            <div id="loading" class="loading hidden">
+                <div class="loading-spinner"></div>
+                <span>Thinking...</span>
+            </div>
+
+            <div class="input-container">
+                <textarea
+                    id="userInput"
+                    placeholder="Type your message here..."
+                    rows="3"
+                    maxlength="2000"
+                ></textarea>
+                <button id="sendButton" class="send-button">Send</button>
+            </div>
+        </div>
+
+        <footer>
+            <p class="info-text">
+                Powered by Google Gemini with RAG and Weather Tools
+            </p>
+        </footer>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
